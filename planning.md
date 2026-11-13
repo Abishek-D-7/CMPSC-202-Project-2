@@ -1,10 +1,23 @@
 # Project 4: Image Processing — Planning and Analysis
 
-**Team members:** TODO
+**Team members:** Lynsey Arthur
 
 ## 1. Problem Formulation
 
-TODO: Summarize the problem and define inputs, outputs, constraints, pixel energy, and the optimization objective.
+### The Question
+
+The objective to Problem 4: Image Processing is to take in an image from a deep-space probe and reduce its size by removing as much static or pixels providing low-energy from it as efficiently as possible. We are given an image that is an $n * m$ grid of pixels. We must reduce the width by finding vertical "seams" of static to safely remove while keeping the integrity and quality of the photo. 
+
+### The Objective
+
+Our goal is to design an algorithm that correctly and quickly identifies the sequence of low-energy pixels to remove while minimizing the loss of important visual features. 
+
+### Inputs, Outputs, and Constraints
+
+Input: Image built of a $n * m$ grid of pixels
+Output: Image with width reduced from removed static
+
+Constraints: Must find low-energy pixels using vertical "seams" moving only down-left, straight down, or down right to adjacent columns.
 
 
 ## 2. Algorithmic Strategy and Pseudocode
