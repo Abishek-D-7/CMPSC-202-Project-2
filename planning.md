@@ -1,23 +1,24 @@
 # Project 4: Image Processing — Planning and Analysis
 
-**Team members:** Lynsey Arthur
+**Team members:** Lynsey Arthur, Abishek Dhakal, Jayden, and Sam
 
 ## 1. Problem Formulation
 
 ### The Question
 
-The objective to Problem 4: Image Processing is to take in an image from a deep-space probe and reduce its size by removing as much static or pixels providing low-energy from it as efficiently as possible. We are given an image that is an $n * m$ grid of pixels. We must reduce the width by finding vertical "seams" of static to safely remove while keeping the integrity and quality of the photo. 
+The objective of Problem 4: Image Processing is to reduce the width of an image transmitted by a deep-space probe while preserving important visual features. The image is an $n \times m$ grid of pixels, and sensor damage has introduced vertical bands of static. We reduce its width by removing low-energy vertical seams. The algorithm selects pixels by energy rather than directly detecting static.
 
 ### The Objective
 
-Our goal is to design an algorithm that correctly and quickly identifies the sequence of low-energy pixels to remove while minimizing the loss of important visual features. 
+Our goal is to efficiently find and remove a minimum-energy vertical seam at each step until the image reaches the desired width. Each pixel has an energy value representing its visual importance; higher values represent stronger contrast or important details. A seam's energy is the sum of its pixels' energies. After each removal, energies are recalculated for the updated image. Each selected seam has the lowest total energy for the current image, although this does not guarantee the globally best sequence of seam removals.
 
 ### Inputs, Outputs, and Constraints
 
-Input: Image built of a $n * m$ grid of pixels
-Output: Image with width reduced from removed static
+Input: An image represented by an $n \times m$ grid of pixels, a desired width `target_width`, and a pixel-energy rule supplied by the image-processing pipeline.
 
-Constraints: Must find low-energy pixels using vertical "seams" moving only down-left, straight down, or down right to adjacent columns.
+Output: An image with $n$ rows and `target_width` columns, produced by removing one minimum-energy seam at a time.
+
+Constraints: The image must have at least one row, and `1 <= target_width <= m`. Each vertical seam contains exactly one pixel in every row, from top to bottom. Consecutive pixels may move only down-left, straight down, or down-right, staying within the image boundaries. Removing a seam preserves the order of the remaining pixels in each row and reduces the width by one.
 
 
 ## 2. Algorithmic Strategy and Pseudocode
