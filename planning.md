@@ -32,7 +32,7 @@ Let `E[r][c]` be the energy of the pixel in row `r`, column `c`, using zero-base
 - **Transition:** `D[r][c] = E[r][c] + min(D[r - 1][p])`, where `p` is a valid column among `c - 1`, `c`, and `c + 1`.
 - **Boundary rule:** Ignore predecessors outside the image.
 - **Reconstruction:** Store the predecessor column chosen for each state. Start at the minimum entry in the bottom row and follow predecessors upward to recover the seam.
-- **Tie rule:** If multiple choices have the same energy, choose the smallest column index for reproducible results.
+- **Tie rule:** If multiple choices have the same energy, choose the smallest column index for reproducible results. For complete seams with equal energy, this orders their column sequences lexicographically from the bottom row upward (compare the bottom columns first, then the preceding rows).
 
 ### Pseudocode
 
@@ -110,60 +110,44 @@ The baseline returns the valid seam with the smallest total energy. Unlike our d
 
 ### Baseline Pseudocode
 
+The baseline uses the same energy grid, valid moves, and tie rule as dynamic programming. Its recursive helper shares `best_energy`, `best_seam`, and `current_seam` with the enclosing function. Energies are accumulated along each path; the current path is copied only when it becomes the best seam.
+
 ```text
 FIND_MINIMUM_SEAM_BRUTE_FORCE(E):
     n = number of rows in E
     w = number of columns in E
-
-    // Keep track of the lowest-energy seam found so far
+    require n >= 1 and w >= 1
     best_energy = infinity
     best_seam = NONE
+    current_seam = empty list
 
-    // A vertical seam can begin at any pixel in the top row
+    // Nested helper: best_energy and best_seam are shared, mutable state.
+    EXPLORE_SEAM(row, col, current_energy):
+        append col to current_seam
+        current_energy = current_energy + E[row][col]
+
+        if row == n - 1:
+            if best_seam == NONE or current_energy < best_energy:
+                best_energy = current_energy
+                best_seam = copy of current_seam
+            else if current_energy == best_energy:
+                if reverse(current_seam) is lexicographically smaller
+                   than reverse(best_seam):
+                    best_seam = copy of current_seam
+        else:
+            for next_col = max(0, col - 1) to min(w - 1, col + 1):
+                EXPLORE_SEAM(row + 1, next_col, current_energy)
+
+        // Backtrack after both complete and incomplete paths.
+        remove the last column from current_seam
+
     for start_col = 0 to w - 1:
-        EXPLORE_SEAM(
-            E,
-            row = 0,
-            col = start_col,
-            current_energy = 0,
-            current_seam = empty,
-            best_energy,
-            best_seam
-        )
+        EXPLORE_SEAM(0, start_col, 0)
 
-    // Return the lowest-energy seam found after checking every possibility
     return best_seam
+```
 
-
-EXPLORE_SEAM(E, row, col, current_energy,
-             current_seam, best_energy, best_seam):
-
-    // Add the current pixel to the seam and include its energy
-    add col to current_seam
-    current_energy = current_energy + E[row][col]
-
-    // Reaching the final row means we found one complete seam
-    if row == number of rows in E - 1:
-        if current_energy < best_energy:
-            best_energy = current_energy
-            best_seam = copy of current_seam
-        return
-
-    // Try each possible direction for the next row
-    // while keeping the column inside the image
-    for next_col in [col - 1, col, col + 1]:
-        if 0 <= next_col < number of columns in E:
-            EXPLORE_SEAM(
-                E,
-                row + 1,
-                next_col,
-                current_energy,
-                current_seam,
-                best_energy,
-                best_seam
-            )
-
-    // Backtrack before exploring another possible path remove the last column from current_seam
+To compare full width reduction, use the same `REDUCE_WIDTH` procedure with `FIND_MINIMUM_SEAM_BRUTE_FORCE` in place of `FIND_MINIMUM_SEAM`. Both algorithms recompute energies on the same updated image after each removal. The baseline enumerates every valid seam, so selecting the least energy, with the shared tie rule, returns the same seam as dynamic programming.
 
 ## 4. Complexity Analysis
 
