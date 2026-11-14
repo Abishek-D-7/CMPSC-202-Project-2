@@ -167,4 +167,21 @@ EXPLORE_SEAM(E, row, col, current_energy,
 
 ## 4. Complexity Analysis
 
-TODO: Analyze time and space for both algorithms, with mathematical justification and clearly stated assumptions.
+We'll be creating a grid using n x m to represent the image size. We'll be using the grid to find the minimum total energy of each vertical seam for one pixel for each row.To do this, each pixel will have a energy value (high and low). The high value shows the more important info, while the low shows the least important info that we want to remove. 
+
+A seam normally starts at the top row at any pixel, moving down to one pixel at a time. It can move down straight, left, or right. We could examine every possible seam and calculate its total energy, however that would take way more time then to do it with dynamic programming.
+
+Example: 
+
+DP[r][c] = minimum total energy of a seam ending at pixel (r, c)
+r = row
+c = column
+E[r][c] = energy of the pixel at that position
+
+Everything will be set to 0 as the starting point: DP[0][r] = E[0][c]
+After the first row, we have three possible routes to take:
+Left - DP[r - 1][c - 1]
+Directly- DP[r - 1][c]
+Right - [r - 1][c + 1]
+We choose the path that has the smallest amount of energy while adding the current amount we are starting with. There is no left or right pixel so our only option is to go directly. 
+Leaving our minimum energy seam: DP [r - 1][c]
