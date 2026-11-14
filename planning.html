@@ -35,6 +35,35 @@ ul.task-list li input[type="checkbox"] {
 <link href="planning_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
 <link href="planning_files/libs/bootstrap/bootstrap-dc3673114810367a1c3852ac2fe0671f.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
 
 </head>
 
@@ -49,10 +78,23 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="project-4-image-processing-planning-and-analysis" class="level1">
 <h1>Project 4: Image Processing — Planning and Analysis</h1>
-<p><strong>Team members:</strong> TODO</p>
+<p><strong>Team members:</strong> Lynsey Arthur, Abishek Dhakal, Jayden, and Sam</p>
 <section id="problem-formulation" class="level2">
 <h2 class="anchored" data-anchor-id="problem-formulation">1. Problem Formulation</h2>
-<p>TODO: Summarize the problem and define inputs, outputs, constraints, pixel energy, and the optimization objective.</p>
+<section id="the-question" class="level3">
+<h3 class="anchored" data-anchor-id="the-question">The Question</h3>
+<p>The objective of Problem 4: Image Processing is to reduce the width of an image transmitted by a deep-space probe while preserving important visual features. The image is an <span class="math inline">\(n \times m\)</span> grid of pixels, and sensor damage has introduced vertical bands of static. We reduce its width by removing low-energy vertical seams. The algorithm selects pixels by energy rather than directly detecting static.</p>
+</section>
+<section id="the-objective" class="level3">
+<h3 class="anchored" data-anchor-id="the-objective">The Objective</h3>
+<p>Our goal is to efficiently find and remove a minimum-energy vertical seam at each step until the image reaches the desired width. Each pixel has an energy value representing its visual importance; higher values represent stronger contrast or important details. A seam’s energy is the sum of its pixels’ energies. After each removal, energies are recalculated for the updated image. Each selected seam has the lowest total energy for the current image, although this does not guarantee the globally best sequence of seam removals.</p>
+</section>
+<section id="inputs-outputs-and-constraints" class="level3">
+<h3 class="anchored" data-anchor-id="inputs-outputs-and-constraints">Inputs, Outputs, and Constraints</h3>
+<p>Input: An image represented by an <span class="math inline">\(n \times m\)</span> grid of pixels, a desired width <code>target_width</code>, and a pixel-energy rule supplied by the image-processing pipeline.</p>
+<p>Output: An image with <span class="math inline">\(n\)</span> rows and <code>target_width</code> columns, produced by removing one minimum-energy seam at a time.</p>
+<p>Constraints: The image must have at least one row, and <code>1 &lt;= target_width &lt;= m</code>. Each vertical seam contains exactly one pixel in every row, from top to bottom. Consecutive pixels may move only down-left, straight down, or down-right, staying within the image boundaries. Removing a seam preserves the order of the remaining pixels in each row and reduces the width by one.</p>
+</section>
 </section>
 <section id="algorithmic-strategy-and-pseudocode" class="level2">
 <h2 class="anchored" data-anchor-id="algorithmic-strategy-and-pseudocode">2. Algorithmic Strategy and Pseudocode</h2>
@@ -65,7 +107,7 @@ ul.task-list li input[type="checkbox"] {
 <li><strong>Transition:</strong> <code>D[r][c] = E[r][c] + min(D[r - 1][p])</code>, where <code>p</code> is a valid column among <code>c - 1</code>, <code>c</code>, and <code>c + 1</code>.</li>
 <li><strong>Boundary rule:</strong> Ignore predecessors outside the image.</li>
 <li><strong>Reconstruction:</strong> Store the predecessor column chosen for each state. Start at the minimum entry in the bottom row and follow predecessors upward to recover the seam.</li>
-<li><strong>Tie rule:</strong> If multiple choices have the same energy, choose the smallest column index for reproducible results.</li>
+<li><strong>Tie rule:</strong> If multiple choices have the same energy, choose the smallest column index for reproducible results. For complete seams with equal energy, this orders their column sequences lexicographically from the bottom row upward (compare the bottom columns first, then the preceding rows).</li>
 </ul>
 </section>
 <section id="pseudocode" class="level3">
@@ -132,7 +174,48 @@ REDUCE_WIDTH(image, target_width):
 </section>
 <section id="baseline-solution" class="level2">
 <h2 class="anchored" data-anchor-id="baseline-solution">3. Baseline Solution</h2>
-<p>TODO: Describe a simple reference algorithm, provide pseudocode, and explain how it will be compared with the proposed solution.</p>
+<section id="brute-force-approach" class="level3">
+<h3 class="anchored" data-anchor-id="brute-force-approach">Brute-Force Approach</h3>
+<p>For our baseline solution, we will use a brute-force algorithm that checks every possible valid vertical seam in the current image. Starting from every pixel in the top row, the algorithm recursively tries every valid next step: down-left, straight down, or down-right. When a path reaches the bottom row, it calculates the total energy of that seam and compares it to the best seam found so far.</p>
+<p>The baseline returns the valid seam with the smallest total energy. Unlike our dynamic programming approach, this algorithm does not save the results of smaller subproblems, so many similar paths are explored repeatedly. This makes it inefficient for larger images, but it gives us a simple reference algorithm that we can use to check the correctness and performance of our proposed solution.</p>
+</section>
+<section id="baseline-pseudocode" class="level3">
+<h3 class="anchored" data-anchor-id="baseline-pseudocode">Baseline Pseudocode</h3>
+<p>The baseline uses the same energy grid, valid moves, and tie rule as dynamic programming. Its recursive helper shares <code>best_energy</code>, <code>best_seam</code>, and <code>current_seam</code> with the enclosing function. Energies are accumulated along each path; the current path is copied only when it becomes the best seam.</p>
+<pre class="text"><code>FIND_MINIMUM_SEAM_BRUTE_FORCE(E):
+    n = number of rows in E
+    w = number of columns in E
+    require n &gt;= 1 and w &gt;= 1
+    best_energy = infinity
+    best_seam = NONE
+    current_seam = empty list
+
+    // Nested helper: best_energy and best_seam are shared, mutable state.
+    EXPLORE_SEAM(row, col, current_energy):
+        append col to current_seam
+        current_energy = current_energy + E[row][col]
+
+        if row == n - 1:
+            if best_seam == NONE or current_energy &lt; best_energy:
+                best_energy = current_energy
+                best_seam = copy of current_seam
+            else if current_energy == best_energy:
+                if reverse(current_seam) is lexicographically smaller
+                   than reverse(best_seam):
+                    best_seam = copy of current_seam
+        else:
+            for next_col = max(0, col - 1) to min(w - 1, col + 1):
+                EXPLORE_SEAM(row + 1, next_col, current_energy)
+
+        // Backtrack after both complete and incomplete paths.
+        remove the last column from current_seam
+
+    for start_col = 0 to w - 1:
+        EXPLORE_SEAM(0, start_col, 0)
+
+    return best_seam</code></pre>
+<p>To compare full width reduction, use the same <code>REDUCE_WIDTH</code> procedure with <code>FIND_MINIMUM_SEAM_BRUTE_FORCE</code> in place of <code>FIND_MINIMUM_SEAM</code>. Both algorithms recompute energies on the same updated image after each removal. The baseline enumerates every valid seam, so selecting the least energy, with the shared tie rule, returns the same seam as dynamic programming.</p>
+</section>
 </section>
 <section id="complexity-analysis" class="level2">
 <h2 class="anchored" data-anchor-id="complexity-analysis">4. Complexity Analysis</h2>
