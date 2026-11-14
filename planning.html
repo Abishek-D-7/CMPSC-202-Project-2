@@ -100,8 +100,7 @@ window.Quarto = {
 <h2 class="anchored" data-anchor-id="algorithmic-strategy-and-pseudocode">2. Algorithmic Strategy and Pseudocode</h2>
 <section id="strategy-dynamic-programming" class="level3">
 <h3 class="anchored" data-anchor-id="strategy-dynamic-programming">Strategy: Dynamic Programming</h3>
-<p>Use dynamic programming to find a minimum-energy vertical seam in the current image. A seam contains exactly one pixel in each row, and consecutive pixels can differ by at most one column. Its total energy is the sum of its pixels’ energy values. After finding a seam, remove it, update the image’s energy values, and repeat until the desired width is reached.</p>
-<p>Let <code>E[r][c]</code> be the energy of the pixel in row <code>r</code>, column <code>c</code>, using zero-based indices. The energy calculation is provided by the image-processing pipeline; larger values mean greater visual importance. Define <code>D[r][c]</code> as the minimum total energy of any seam starting in the top row and ending at <code>(r, c)</code>.</p>
+<p>Use dynamic programming to find each minimum-energy seam, then remove it and repeat. With zero-based indices, let <code>E[r][c]</code> be the pixel energy and <code>D[r][c]</code> the minimum total energy of a seam from the top row to <code>(r, c)</code>.</p>
 <ul>
 <li><strong>Base case:</strong> <code>D[0][c] = E[0][c]</code> for every column.</li>
 <li><strong>Transition:</strong> <code>D[r][c] = E[r][c] + min(D[r - 1][p])</code>, where <code>p</code> is a valid column among <code>c - 1</code>, <code>c</code>, and <code>c + 1</code>.</li>
@@ -176,12 +175,11 @@ REDUCE_WIDTH(image, target_width):
 <h2 class="anchored" data-anchor-id="baseline-solution">3. Baseline Solution</h2>
 <section id="brute-force-approach" class="level3">
 <h3 class="anchored" data-anchor-id="brute-force-approach">Brute-Force Approach</h3>
-<p>For our baseline solution, we will use a brute-force algorithm that checks every possible valid vertical seam in the current image. Starting from every pixel in the top row, the algorithm recursively tries every valid next step: down-left, straight down, or down-right. When a path reaches the bottom row, it calculates the total energy of that seam and compares it to the best seam found so far.</p>
-<p>The baseline returns the valid seam with the smallest total energy. Unlike our dynamic programming approach, this algorithm does not save the results of smaller subproblems, so many similar paths are explored repeatedly. This makes it inefficient for larger images, but it gives us a simple reference algorithm that we can use to check the correctness and performance of our proposed solution.</p>
+<p>The brute-force baseline recursively explores every valid seam from every top-row pixel, accumulating energy along each path and retaining the best complete seam. It does not reuse subproblem results, making it a simple reference for checking dynamic programming on small images.</p>
 </section>
 <section id="baseline-pseudocode" class="level3">
 <h3 class="anchored" data-anchor-id="baseline-pseudocode">Baseline Pseudocode</h3>
-<p>The baseline uses the same energy grid, valid moves, and tie rule as dynamic programming. Its recursive helper shares <code>best_energy</code>, <code>best_seam</code>, and <code>current_seam</code> with the enclosing function. Energies are accumulated along each path; the current path is copied only when it becomes the best seam.</p>
+<p>The baseline uses the same energy grid and tie rule as dynamic programming. Its nested helper shares <code>best_energy</code>, <code>best_seam</code>, and <code>current_seam</code> with the enclosing function.</p>
 <pre class="text"><code>FIND_MINIMUM_SEAM_BRUTE_FORCE(E):
     n = number of rows in E
     w = number of columns in E
@@ -214,12 +212,29 @@ REDUCE_WIDTH(image, target_width):
         EXPLORE_SEAM(0, start_col, 0)
 
     return best_seam</code></pre>
-<p>To compare full width reduction, use the same <code>REDUCE_WIDTH</code> procedure with <code>FIND_MINIMUM_SEAM_BRUTE_FORCE</code> in place of <code>FIND_MINIMUM_SEAM</code>. Both algorithms recompute energies on the same updated image after each removal. The baseline enumerates every valid seam, so selecting the least energy, with the shared tie rule, returns the same seam as dynamic programming.</p>
+<p>For full width reduction, replace <code>FIND_MINIMUM_SEAM</code> in <code>REDUCE_WIDTH</code> with <code>FIND_MINIMUM_SEAM_BRUTE_FORCE</code>. Exhaustive enumeration and the shared tie rule ensure both methods return the same seam at each step.</p>
 </section>
 </section>
 <section id="complexity-analysis" class="level2">
 <h2 class="anchored" data-anchor-id="complexity-analysis">4. Complexity Analysis</h2>
-<p>TODO: Analyze time and space for both algorithms, with mathematical justification and clearly stated assumptions.</p>
+<section id="assumptions-and-notation" class="level3">
+<h3 class="anchored" data-anchor-id="assumptions-and-notation">Assumptions and Notation</h3>
+<p>The image has <code>n</code> rows and an original width of <code>m</code> columns. Let <code>w</code> be the current width and <code>k = m - target_width</code> be the number of seams removed. Assume energy arithmetic and comparisons take constant time, and computing one pixel’s energy takes constant time. Computing the energy grid then takes <code>Theta(nw)</code> time and space.</p>
+</section>
+<section id="dynamic-programming" class="level3">
+<h3 class="anchored" data-anchor-id="dynamic-programming">Dynamic Programming</h3>
+<p>The <code>nw</code> table entries each check at most three predecessors. Initializing the first row and finding the bottom-row minimum take <code>Theta(w)</code> time each; reconstructing the seam takes <code>Theta(n)</code>. Finding one seam therefore takes <strong><code>Theta(nw)</code> time</strong> and <strong><code>Theta(nw)</code> auxiliary space</strong> for the tables and seam.</p>
+<p>Computing energies and copying the image to remove the seam also take <code>Theta(nw)</code> time, so one complete removal still takes <code>Theta(nw)</code> time. For <code>k &gt;= 1</code>, the widths processed are <code>m, m - 1, ..., target_width + 1</code>. The total time is</p>
+<p><code>Theta(n * k * (m + target_width + 1) / 2) = Theta(nmk)</code>.</p>
+<p>Peak auxiliary space is <strong><code>Theta(nm)</code></strong>, since earlier tables and images can be released between iterations. If <code>k = 0</code>, the pseudocode returns the original image in <code>Theta(1)</code> time and auxiliary space.</p>
+</section>
+<section id="brute-force" class="level3">
+<h3 class="anchored" data-anchor-id="brute-force">Brute Force</h3>
+<p>The baseline starts from each of the <code>w</code> top-row pixels and explores at most three choices for each of the remaining <code>n - 1</code> rows. There are at most <code>w * 3^(n - 1)</code> complete seams. Accumulating energy takes constant time per recursive call, but copying a best seam or comparing tied seams can take <code>O(n)</code> time per complete seam. Thus finding one seam has an upper bound of <strong><code>O(nw * 3^(n - 1))</code> time</strong> for the pseudocode in Section 3.</p>
+<p>This is an upper bound, since image boundaries reduce branching. A one-column image has only one seam and takes <code>Theta(n)</code> time; a one-row image takes <code>Theta(w)</code> time. For any fixed width of at least two, the number of seams grows exponentially with the number of rows.</p>
+<p>The recursion stack, current seam, best seam, and temporary tie comparisons use <strong><code>O(n)</code> auxiliary space</strong>, excluding the supplied energy grid. Including the energy grid and the copied image, one complete removal uses <strong><code>O(nw)</code> auxiliary space</strong>.</p>
+<p>For <code>k &gt;= 1</code>, repeating this procedure gives a total-time upper bound of <strong><code>O(nmk * 3^(n - 1))</code></strong> and peak auxiliary space of <strong><code>O(nm)</code></strong>. Removing no seams takes <code>Theta(1)</code> time and auxiliary space, just as in the dynamic programming version.</p>
+</section>
 </section>
 </section>
 

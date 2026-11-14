@@ -24,9 +24,7 @@ Constraints: The image must have at least one row, and `1 <= target_width <= m`.
 
 ### Strategy: Dynamic Programming
 
-Use dynamic programming to find a minimum-energy vertical seam in the current image. A seam contains exactly one pixel in each row, and consecutive pixels can differ by at most one column. Its total energy is the sum of its pixels' energy values. After finding a seam, remove it, update the image's energy values, and repeat until the desired width is reached.
-
-Let `E[r][c]` be the energy of the pixel in row `r`, column `c`, using zero-based indices. The energy calculation is provided by the image-processing pipeline; larger values mean greater visual importance. Define `D[r][c]` as the minimum total energy of any seam starting in the top row and ending at `(r, c)`.
+Use dynamic programming to find each minimum-energy seam, then remove it and repeat. With zero-based indices, let `E[r][c]` be the pixel energy and `D[r][c]` the minimum total energy of a seam from the top row to `(r, c)`.
 
 - **Base case:** `D[0][c] = E[0][c]` for every column.
 - **Transition:** `D[r][c] = E[r][c] + min(D[r - 1][p])`, where `p` is a valid column among `c - 1`, `c`, and `c + 1`.
@@ -104,13 +102,11 @@ This proves that each removed seam is optimal for the image at that step. Repeat
 
 ### Brute-Force Approach
 
-For our baseline solution, we will use a brute-force algorithm that checks every possible valid vertical seam in the current image. Starting from every pixel in the top row, the algorithm recursively tries every valid next step: down-left, straight down, or down-right. When a path reaches the bottom row, it calculates the total energy of that seam and compares it to the best seam found so far.
-
-The baseline returns the valid seam with the smallest total energy. Unlike our dynamic programming approach, this algorithm does not save the results of smaller subproblems, so many similar paths are explored repeatedly. This makes it inefficient for larger images, but it gives us a simple reference algorithm that we can use to check the correctness and performance of our proposed solution.
+The brute-force baseline recursively explores every valid seam from every top-row pixel, accumulating energy along each path and retaining the best complete seam. It does not reuse subproblem results, making it a simple reference for checking dynamic programming on small images.
 
 ### Baseline Pseudocode
 
-The baseline uses the same energy grid, valid moves, and tie rule as dynamic programming. Its recursive helper shares `best_energy`, `best_seam`, and `current_seam` with the enclosing function. Energies are accumulated along each path; the current path is copied only when it becomes the best seam.
+The baseline uses the same energy grid and tie rule as dynamic programming. Its nested helper shares `best_energy`, `best_seam`, and `current_seam` with the enclosing function.
 
 ```text
 FIND_MINIMUM_SEAM_BRUTE_FORCE(E):
@@ -147,25 +143,30 @@ FIND_MINIMUM_SEAM_BRUTE_FORCE(E):
     return best_seam
 ```
 
-To compare full width reduction, use the same `REDUCE_WIDTH` procedure with `FIND_MINIMUM_SEAM_BRUTE_FORCE` in place of `FIND_MINIMUM_SEAM`. Both algorithms recompute energies on the same updated image after each removal. The baseline enumerates every valid seam, so selecting the least energy, with the shared tie rule, returns the same seam as dynamic programming.
+For full width reduction, replace `FIND_MINIMUM_SEAM` in `REDUCE_WIDTH` with `FIND_MINIMUM_SEAM_BRUTE_FORCE`. Exhaustive enumeration and the shared tie rule ensure both methods return the same seam at each step.
 
 ## 4. Complexity Analysis
 
-We'll be creating a grid using n x m to represent the image size. We'll be using the grid to find the minimum total energy of each vertical seam for one pixel for each row.To do this, each pixel will have a energy value (high and low). The high value shows the more important info, while the low shows the least important info that we want to remove. 
+### Assumptions and Notation
 
-A seam normally starts at the top row at any pixel, moving down to one pixel at a time. It can move down straight, left, or right. We could examine every possible seam and calculate its total energy, however that would take way more time then to do it with dynamic programming.
+The image has `n` rows and an original width of `m` columns. Let `w` be the current width and `k = m - target_width` be the number of seams removed. Assume energy arithmetic and comparisons take constant time, and computing one pixel's energy takes constant time. Computing the energy grid then takes `Theta(nw)` time and space.
 
-Example: 
+### Dynamic Programming
 
-DP[r][c] = minimum total energy of a seam ending at pixel (r, c)
-r = row
-c = column
-E[r][c] = energy of the pixel at that position
+The `nw` table entries each check at most three predecessors. Initializing the first row and finding the bottom-row minimum take `Theta(w)` time each; reconstructing the seam takes `Theta(n)`. Finding one seam therefore takes **`Theta(nw)` time** and **`Theta(nw)` auxiliary space** for the tables and seam.
 
-Everything will be set to 0 as the starting point: DP[0][r] = E[0][c]
-After the first row, we have three possible routes to take:
-Left - DP[r - 1][c - 1]
-Directly- DP[r - 1][c]
-Right - [r - 1][c + 1]
-We choose the path that has the smallest amount of energy while adding the current amount we are starting with. There is no left or right pixel so our only option is to go directly. 
-Leaving our minimum energy seam: DP [r - 1][c]
+Computing energies and copying the image to remove the seam also take `Theta(nw)` time, so one complete removal still takes `Theta(nw)` time. For `k >= 1`, the widths processed are `m, m - 1, ..., target_width + 1`. The total time is
+
+`Theta(n * k * (m + target_width + 1) / 2) = Theta(nmk)`.
+
+Peak auxiliary space is **`Theta(nm)`**, since earlier tables and images can be released between iterations. If `k = 0`, the pseudocode returns the original image in `Theta(1)` time and auxiliary space.
+
+### Brute Force
+
+The baseline starts from each of the `w` top-row pixels and explores at most three choices for each of the remaining `n - 1` rows. There are at most `w * 3^(n - 1)` complete seams. Accumulating energy takes constant time per recursive call, but copying a best seam or comparing tied seams can take `O(n)` time per complete seam. Thus finding one seam has an upper bound of **`O(nw * 3^(n - 1))` time** for the pseudocode in Section 3.
+
+This is an upper bound, since image boundaries reduce branching. A one-column image has only one seam and takes `Theta(n)` time; a one-row image takes `Theta(w)` time. For any fixed width of at least two, the number of seams grows exponentially with the number of rows.
+
+The recursion stack, current seam, best seam, and temporary tie comparisons use **`O(n)` auxiliary space**, excluding the supplied energy grid. Including the energy grid and the copied image, one complete removal uses **`O(nw)` auxiliary space**.
+
+For `k >= 1`, repeating this procedure gives a total-time upper bound of **`O(nmk * 3^(n - 1))`** and peak auxiliary space of **`O(nm)`**. Removing no seams takes `Theta(1)` time and auxiliary space, just as in the dynamic programming version.

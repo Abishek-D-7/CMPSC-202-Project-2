@@ -4,4 +4,4 @@ This project explores **seam carving**, a content-aware image resizing technique
 
 An image is represented as a grid of **n rows and m columns**. Each pixel receives an energy value representing its visual importance. A vertical seam is a connected path containing one pixel in every row; each step moves down-left, straight down, or down-right. Removing a seam reduces the image width by one pixel. The algorithm removes one minimum-energy seam at a time, recalculating energies after each removal until the target width is reached. Each seam is optimal for the current image; this does not guarantee a globally optimal sequence of removals or directly detect static.
 
-See [planning.md](planning.md) for the dynamic programming strategy, brute-force baseline, correctness argument, and planned complexity analysis. The rendered version is [planning.html](planning.html).
+See [planning.md](planning.md) for the dynamic programming strategy, brute-force baseline, correctness argument, and complexity analysis. The rendered version is [planning.html](planning.html).
