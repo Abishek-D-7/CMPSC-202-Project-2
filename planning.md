@@ -20,9 +20,7 @@ Output: An image with $n$ rows and `target_width` columns, produced by removing 
 
 Constraints: The image must have at least one row, and `1 <= target_width <= m`. Each vertical seam contains exactly one pixel in every row, from top to bottom. Consecutive pixels may move only down-left, straight down, or down-right, staying within the image boundaries. Removing a seam preserves the order of the remaining pixels in each row and reduces the width by one.
 
-
 ## 2. Algorithmic Strategy and Pseudocode
-
 
 ### Strategy: Dynamic Programming
 
@@ -104,7 +102,68 @@ This proves that each removed seam is optimal for the image at that step. Repeat
 
 ## 3. Baseline Solution
 
-TODO: Describe a simple reference algorithm, provide pseudocode, and explain how it will be compared with the proposed solution.
+### Brute-Force Approach
+
+For our baseline solution, we will use a brute-force algorithm that checks every possible valid vertical seam in the current image. Starting from every pixel in the top row, the algorithm recursively tries every valid next step: down-left, straight down, or down-right. When a path reaches the bottom row, it calculates the total energy of that seam and compares it to the best seam found so far.
+
+The baseline returns the valid seam with the smallest total energy. Unlike our dynamic programming approach, this algorithm does not save the results of smaller subproblems, so many similar paths are explored repeatedly. This makes it inefficient for larger images, but it gives us a simple reference algorithm that we can use to check the correctness and performance of our proposed solution.
+
+### Baseline Pseudocode
+
+```text
+FIND_MINIMUM_SEAM_BRUTE_FORCE(E):
+    n = number of rows in E
+    w = number of columns in E
+
+    // Keep track of the lowest-energy seam found so far
+    best_energy = infinity
+    best_seam = NONE
+
+    // A vertical seam can begin at any pixel in the top row
+    for start_col = 0 to w - 1:
+        EXPLORE_SEAM(
+            E,
+            row = 0,
+            col = start_col,
+            current_energy = 0,
+            current_seam = empty,
+            best_energy,
+            best_seam
+        )
+
+    // Return the lowest-energy seam found after checking every possibility
+    return best_seam
+
+
+EXPLORE_SEAM(E, row, col, current_energy,
+             current_seam, best_energy, best_seam):
+
+    // Add the current pixel to the seam and include its energy
+    add col to current_seam
+    current_energy = current_energy + E[row][col]
+
+    // Reaching the final row means we found one complete seam
+    if row == number of rows in E - 1:
+        if current_energy < best_energy:
+            best_energy = current_energy
+            best_seam = copy of current_seam
+        return
+
+    // Try each possible direction for the next row
+    // while keeping the column inside the image
+    for next_col in [col - 1, col, col + 1]:
+        if 0 <= next_col < number of columns in E:
+            EXPLORE_SEAM(
+                E,
+                row + 1,
+                next_col,
+                current_energy,
+                current_seam,
+                best_energy,
+                best_seam
+            )
+
+    // Backtrack before exploring another possible path remove the last column from current_seam
 
 ## 4. Complexity Analysis
 
